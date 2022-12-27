@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/src/widgets/container.dart';
-import 'package:flutter/src/widgets/framework.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:test_flutter/model/user_model.dart';
 
 class UserPage extends StatefulWidget {
   const UserPage({super.key});
@@ -10,7 +10,7 @@ class UserPage extends StatefulWidget {
 }
 
 class _UserPageState extends State<UserPage> {
-  final contollerName = TextEditingController();
+  final controllerName = TextEditingController();
   final controllerAge = TextEditingController();
   final controllerDate = TextEditingController();
 
@@ -24,24 +24,46 @@ class _UserPageState extends State<UserPage> {
         padding: EdgeInsets.all(16),
         children: <Widget>[
           TextField(
+            controller: controllerName,
             decoration: const InputDecoration(hintText: 'enter name'),
           ),
           const SizedBox(height: 24),
           TextField(
+            controller: controllerAge,
             decoration: InputDecoration(hintText: 'enter age'),
             keyboardType: TextInputType.number,
           ),
           const SizedBox(height: 24),
           TextField(
+            controller: controllerDate,
             decoration: InputDecoration(hintText: 'BirthDay'),
           ),
           const SizedBox(height: 32),
           ElevatedButton(
-            onPressed: () {},
+            onPressed: () {
+              final user = User(
+                name: controllerName.text,
+                age: int.parse(controllerAge.text),
+                birthday: controllerAge.text,
+              );
+
+              createuser(user);
+              Navigator.pop(context);
+            },
             child: Text('Create'),
           )
         ],
       ),
     );
   }
+}
+
+Future createuser(User user) async {
+  // // Reference to document
+//   //final docUser = FirebaseFirestore.instance.collection('users').doc('my-id');
+  final docUser = FirebaseFirestore.instance.collection('users').doc();
+  user.id = docUser.id;
+
+  final json = user.toJson();
+  await docUser.set(json);
 }

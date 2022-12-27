@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:test_flutter/firebase_options.dart';
+import 'package:test_flutter/model/user_model.dart';
+import 'package:test_flutter/suser_page.dart';
 import 'package:test_flutter/user_page.dart';
 
 Future<void> main() async {
@@ -26,6 +28,7 @@ class MyApp extends StatelessWidget {
       home: const HomeScreen(),
       routes: {
         './adduser/': (context) => const UserPage(),
+        './user/': (context) => const suserpage(),
       },
     );
   }
@@ -45,64 +48,92 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: TextField(
-          controller: controller,
-          decoration: const InputDecoration(hintText: 'Type name here'),
-        ),
+        title: Text('CRUD Firebase'),
         actions: [
           IconButton(
             onPressed: () {
-              Navigator.of(context)
-                  .pushNamedAndRemoveUntil('./adduser', ((route) => false));
+              Navigator.of(context).pushNamed(
+                './adduser/',
+              );
             },
             icon: Icon(Icons.add),
+          ),
+          IconButton(
+            onPressed: () {
+              Navigator.of(context).pushNamed('./user/');
+            },
+            icon: Icon(Icons.add_home),
+          ),
+          IconButton(
+            onPressed: () {
+              updateuser();
+            },
+            icon: Icon(Icons.update),
+          ),
+          IconButton(
+            onPressed: () {
+              deleteuser();
+            },
+            icon: Icon(Icons.delete),
           )
         ],
+      ),
+      body: StreamBuilder(
+        stream: readUsers(),
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            final users = snapshot.data;
+            return ListView(
+              children: users!.map(buildUser).toList(),
+            );
+          } else if (snapshot.hasError) {
+            return Text('Something went wrong!${snapshot}');
+          } else {
+            return Center(child: CircularProgressIndicator());
+          }
+        },
       ),
     );
   }
 }
 
-Future createuser({required String name}) async {
-// Reference to document
-  //final docUser = FirebaseFirestore.instance.collection('users').doc('my-id');
-  final docUser = FirebaseFirestore.instance.collection('users');
-  // final json = {
-  //   'name': name,
-  //   'age': 21,
-  //   'birthday': DateTime(2001, 7, 28),
-  // };
+// body: FutureBuilder<List<User>>(
+//   future: readUsers().first,
 
-  final user = User(
-    id: docUser.id,
-    name: name,
-    age: 21,
-    birthday: DateTime(2001, 7, 28),
-  );
+// stream builder (stream , builder) :- to have realtime stream of data
+// future builder (future, builder) :- to have something in future
 
-  final json = user.toJson();
+Widget buildUser(User user) => ListTile(
+      leading: CircleAvatar(child: Text('$user.age')),
+      title: Text(user.name),
+      subtitle: Text(user.birthday),
+    );
 
-  //create document and write data to firebase
-  await docUser.add(json);
-}
+Stream<List<User>> readUsers() => FirebaseFirestore.instance
+    .collection('users')
+    .snapshots()
+    .map(((snapshot) =>
+        snapshot.docs.map((doc) => User.fromJson(doc.data())).toList()));
 
-class User {
-  String id;
-  final String name;
-  final int age;
-  final DateTime birthday;
+void updateuser() async {
+  final docUser = FirebaseFirestore.instance
+      .collection('users')
+      .doc('ZJdOKxBX142X4jJ8bEbM');
 
-  User({
-    this.id = '',
-    required this.name,
-    required this.age,
-    required this.birthday,
+//update specific fields
+  docUser.update({
+    'name': 'alex',
   });
 
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'age': age,
-        'birthday': birthday,
-      };
+  // delete fieldvalue :- 'name of field' :FieldValue.delete(),
+  // nested city.name
+  // doc.set :- will replace document
+}
+
+void deleteuser() async {
+  final docUser = FirebaseFirestore.instance
+      .collection('users')
+      .doc('ZJdOKxBX142X4jJ8bEbM');
+//delete document
+  docUser.delete();
 }
